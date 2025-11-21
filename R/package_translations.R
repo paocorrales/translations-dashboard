@@ -1,11 +1,13 @@
+# Loading packages
 library(tidyverse)
 library(viridis)
 library(hrbrthemes)
 library(plotly)
 
+# Sourcing the main dataset script
 source("R/global_translations.R")
 
-
+# Updating final dataset for summary
 final_df_updated <- final_df |> group_by(package) |>    
                     summarise(across(c(translated_count,untranslated_count, 
                                        fuzzy_count), sum)) |> 
@@ -30,23 +32,19 @@ package_df <- package_df |> pivot_longer(cols = 9:11, values_to = "percentage",
                                          names_to = "status")
 
 
-p <- ggplot(package_df, aes(x = percentage, y = package, fill = status)) +
+# Filtering values for overall 
+# * Need to add a filter here
+package_df <- package_df |> filter(language == "All")
+
+
+# Diverging bar plot to show the difference between translation status
+ggplot(package_df, aes(x = percentage, y = package, fill = status)) +
   geom_bar(stat = "identity") +
   labs(y = "R packages", x = "Percentage") +
   scale_fill_discrete(name = "Translation status", 
                       breaks = c('Fuzzy', 'Untranslated', 
                                  'Translated')) +
   theme(legend.position = "top")
-
-ggplotly(p)
-
-
-
-
-
-
-
-
 
 
 
