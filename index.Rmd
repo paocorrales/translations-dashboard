@@ -94,7 +94,7 @@ trans_stats
 Row {data-height=800}
 -----------------------------------------------------------------------
 
-### Graph of Translated vs Untranslated Messages | <small> Per Language </small>
+### Translatation progress | <small> Per Language </small>
 
 ```{r}
 library(plotly)
@@ -155,7 +155,7 @@ build_waffle <- function(data) {
   
   # --- Loop 1: Grid shapes (Percentages) ---
   for (i in 1:nrow(data)) {
-    country_name <- data$language[i]
+    language <- data$language[i]
     
     # Use percentages to build the 10x10 grid
     counts <- c(
@@ -177,9 +177,9 @@ build_waffle <- function(data) {
     
     # Add title annotation
     all_annotations[[length(all_annotations) + 1]] <- list(
-      x = x_offset + 4.5, 
-      y = y_offset + 10.5, 
-      text = paste("<b>", country_name, "</b>"), 
+      x = x_offset + 5, 
+      y = y_offset + 10.75, 
+      text = paste("<b>", language, "</b>"), 
       showarrow = FALSE, 
       font = list(size = 12, family = "Arial", color = "darkgrey")
     )
@@ -206,7 +206,7 @@ build_waffle <- function(data) {
   hover_data <- data.frame()
   
   for (i in 1:nrow(data)) {
-    country_name <- data$language[i]
+    language <- data$language[i]
     
     pct_counts <- c(
       Translated = data$Translated[i], 
@@ -230,7 +230,7 @@ build_waffle <- function(data) {
     
     grid$real_x <- grid$x + x_offset + 0.45
     grid$real_y <- grid$y + y_offset + 0.45
-    grid$Country <- country_name
+    grid$language <- language
     
     grid$Total <- rep(real_counts, times = pct_counts)
     
@@ -269,7 +269,7 @@ build_waffle <- function(data) {
       colors = colors,
       marker = list(opacity = 100), 
       
-      text = ~paste("<b>", Country, "</b><br><b>", category, "</b>messages:<b>",Total, "</b>"),
+      text = ~paste("<b>", language, "</b><br><b>", category, "</b>messages:<b>",Total, "</b>"),
       hoverinfo = "text",
       name = ~category
     )
