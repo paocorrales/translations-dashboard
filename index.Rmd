@@ -91,6 +91,195 @@ trans_stats <- trans_stats %>% layout(yaxis = list(title = 'Message Count'), xax
 trans_stats
 ```
 
+Row {data-height=800}
+-----------------------------------------------------------------------
+
+### Graph of Translated vs Untranslated Messages | <small> Per Language </small>
+
+```{r}
+library(plotly)
+library(dplyr)
+
+# Data manipulation
+lang_df <- final_df |> 
+  group_by(language) |>
+  summarise(
+    translated_count = sum(translated_count, na.rm = TRUE),
+    untranslated_count = sum(untranslated_count, na.rm = TRUE),
+    fuzzy_count = sum(fuzzy_count, na.rm = TRUE),
+    Total = translated_count + untranslated_count + fuzzy_count
+  ) |> 
+  mutate(
+    Translated = case_when(
+      translated_count > 0 & round(translated_count/Total*100, 0) == 0 ~ 1,
+      TRUE ~ round(translated_count/Total*100, 0)
+    ),
+    Fuzzy = case_when(
+      fuzzy_count > 0 & round(fuzzy_count/Total*100, 0) == 0 ~ 1,
+      TRUE ~ round(fuzzy_count/Total*100, 0)
+    ),
+    Untranslated = 100 - Translated - Fuzzy
+  )
+
+# Generate layout for 1 waffle chart
+create_waffle_coordinates <- function(total_squares, width = 10) {
+  x <- numeric(total_squares)
+  y <- numeric(total_squares)
+  
+  for (i in 0:(total_squares - 1)) {
+    x[i + 1] <- i %% width
+    y[i + 1] <- floor(i / width)
+  }
+  return(data.frame(x = x, y = y))
+}
+
+# Set colors to translation status
+colors <- c(
+  "Translated" = "#5495CFFF",
+  "Untranslated" = "#DB4743FF",
+  "Fuzzy" = "#F5AF4DFF"
+)
+
+build_waffle <- function(data) {
+  
+  all_shapes <- list()
+  all_annotations <- list()
+  
+  # -- Layout configuration --
+  cols <- 6 
+  rows <- ceiling(nrow(data) / cols)
+  
+  # Gap between charts
+  x_gap <- 11 
+  y_gap <- 12.5 
+  
+  # --- Loop 1: Grid shapes (Percentages) ---
+  for (i in 1:nrow(data)) {
+    country_name <- data$language[i]
+    
+    # Use percentages to build the 10x10 grid
+    counts <- c(
+      Translated = data$Translated[i],
+      Untranslated = data$Untranslated[i],
+      Fuzzy = data$Fuzzy[i]
+    )
+    
+    # Grid position calculation
+    col_idx <- (i - 1) %% cols
+    row_idx <- floor((i - 1) / cols)
+    
+    x_offset <- col_idx * x_gap
+    y_offset <- (rows - 1 - row_idx) * y_gap 
+    
+    # Create coordinates
+    grid <- create_waffle_coordinates(sum(counts))
+    grid$category <- rep(names(counts), times = counts)
+    
+    # Add title annotation
+    all_annotations[[length(all_annotations) + 1]] <- list(
+      x = x_offset + 4.5, 
+      y = y_offset + 10.5, 
+      text = paste("<b>", country_name, "</b>"), 
+      showarrow = FALSE, 
+      font = list(size = 12, family = "Arial", color = "darkgrey")
+    )
+    
+    # Create shapes
+    for (j in 1:nrow(grid)) {
+      cat_name <- grid$category[j]
+      
+      shape <- list(
+        type = "rect",
+        x0 = grid$x[j] + x_offset, 
+        y0 = grid$y[j] + y_offset,
+        x1 = grid$x[j] + x_offset + 0.9, 
+        y1 = grid$y[j] + y_offset + 0.9,
+        fillcolor = colors[[cat_name]],
+        line = list(width = 0),
+        layer = "below"
+      )
+      all_shapes[[length(all_shapes) + 1]] <- shape
+    }
+  }
+  
+  # --- Loop 2: Hover data (Counts) ---
+  hover_data <- data.frame()
+  
+  for (i in 1:nrow(data)) {
+    country_name <- data$language[i]
+    
+    pct_counts <- c(
+      Translated = data$Translated[i], 
+      Untranslated = data$Untranslated[i], 
+      Fuzzy = data$Fuzzy[i]
+    )
+    
+    real_counts <- c(
+      Translated = data$translated_count[i], 
+      Untranslated = data$untranslated_count[i], 
+      Fuzzy = data$fuzzy_count[i]
+    )
+    
+    col_idx <- (i - 1) %% cols
+    row_idx <- floor((i - 1) / cols)
+    x_offset <- col_idx * x_gap
+    y_offset <- (rows - 1 - row_idx) * y_gap
+    
+    grid <- create_waffle_coordinates(sum(pct_counts))
+    grid$category <- rep(names(pct_counts), times = pct_counts)
+    
+    grid$real_x <- grid$x + x_offset + 0.45
+    grid$real_y <- grid$y + y_offset + 0.45
+    grid$Country <- country_name
+    
+    grid$Total <- rep(real_counts, times = pct_counts)
+    
+    hover_data <- rbind(hover_data, grid)
+  }
+  
+  # Interactive plot
+  p <- plot_ly() |>
+    layout(
+      shapes = all_shapes,
+      annotations = all_annotations,
+      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, title = ""),
+      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE, scaleanchor = "x", scaleratio = 1, title = ""),
+      showlegend = TRUE,
+      legend = list(
+        orientation = "h",
+        xanchor = "center",
+        x = 0.5, 
+        y = -0.005,
+        yanchor = "top",
+        font = list(size = 15, family = "Arial", color = "darkgrey"),
+        font = list(size = 15),
+        itemsizing = "constant",
+        bgcolor = "rgba(0,0,0,0)"
+      ),
+      margin = list(t = 10, b = 80, l = 0, r = 0),
+      height = 800 
+    ) |>
+    add_trace(
+      data = hover_data,
+      x = ~real_x,
+      y = ~real_y,
+      type = 'scatter',
+      mode = 'markers',
+      color = ~category,
+      colors = colors,
+      marker = list(opacity = 100), 
+      
+      text = ~paste("<b>", Country, "</b><br><b>", category, "</b>messages:<b>",Total, "</b>"),
+      hoverinfo = "text",
+      name = ~category
+    )
+    
+  return(p)
+}
+
+build_waffle(lang_df)
+```
+
 Row {data-height=450}
 -----------------------------------------------------------------------
 
