@@ -72,40 +72,84 @@ Row {data-height=70}
 -----------------------------------------------------------------------
 
 ```{r data}
-trans_stats <- SharedData$new(final_df)
-```
 
-```{r filters}
+final_df_updated <- final_df |> group_by(package) |>    
+  summarise(across(c(translated_count,untranslated_count, 
+                     fuzzy_count), sum)) |> 
+  mutate(language = "All", .after = package)
 
-# Filter Select Input - Language
-filter_select(id = "language", 
-              label = "Select Translation Language",
-              sharedData = trans_stats, 
-              group = ~language)
+final_df_updated <- final_df_updated |>
+  rowwise() |> 
+  mutate(
+    pc_trans_count = translated_count / sum(c_across(translated_count:fuzzy_count)),
+    pc_untrans_count = untranslated_count / sum(c_across(translated_count:fuzzy_count)),
+    pc_fuzzy_count = fuzzy_count / sum(c_across(translated_count:fuzzy_count)) 
+  )
 
-```
+final_df_neg <- bind_rows(final_df_updated, final_df) |> 
+  mutate(pc_untrans_count = -pc_untrans_count,
+         pc_fuzzy_count = -pc_fuzzy_count,
+         pc_trans_count = pc_trans_count) |>
+  pivot_longer(cols = starts_with("pc"), values_to = "percentage", names_to = "trans_status") |>
+  mutate(trans_status = factor(trans_status,
+                               levels = c("pc_trans_count", "pc_untrans_count", "pc_fuzzy_count"),
+                               labels = c("Translated", "Untranslated", "Fuzzy")))
 
-Row {data-height=450}
------------------------------------------------------------------------
-
-### Graph of Translated vs Untranslated Messages | <small> Per Language </small>
-
-```{r}
-trans_stats <- plot_ly(trans_stats, x = ~package, y = ~translated_count, type = 'bar', name = 'Translated Messages')
-trans_stats <- trans_stats %>% add_trace(y = ~untranslated_count, name = 'Untranslated Messages')
-trans_stats <- trans_stats %>% add_trace(y = ~fuzzy_count, name = 'Fuzzy Messages')
-trans_stats <- trans_stats %>% layout(yaxis = list(title = 'Message Count'), xaxis = list(title = "Packages"), barmode = 'group')
-trans_stats
 ```
 
 Row {data-height=800}
 -----------------------------------------------------------------------
+### Translatation progress | <small> Per Package </small>
+
+
+```{r}
+language <- final_df_neg$language
+
+buttons <- lapply(unique(final_df_neg$language), function(filter_by_this) {
+  list(
+    method = "update",
+    args = list(
+      list(
+        color = list(final_df_neg$trans_status[final_df_neg$language == filter_by_this]),
+        y = list(final_df_neg$package[final_df_neg$language == filter_by_this]),
+        x = list(final_df_neg$percentage[final_df_neg$language == filter_by_this])
+      )
+    ),
+    label = filter_by_this
+  )
+})
+
+
+fig <- plot_ly() |> 
+  
+  add_bars(data = final_df_neg,
+           x = ~percentage,
+           y = ~package,
+           color = ~trans_status,
+           colors = colors) 
+
+fig <- fig %>% layout(
+  xaxis = list(title = 'Percentage', tickformat = ',.0%'),
+  yaxis = list(title = ''), 
+  barmode = 'relative',
+  legend = list(y = 0.85),
+  updatemenus = list(
+    list(
+      x = 1.4,
+      y = 1,
+      buttons = buttons
+    )
+  )
+)
+
+
+fig
+```
+
 
 ### Translatation progress | <small> Per Language </small>
 
 ```{r}
-library(plotly)
-library(dplyr)
 
 # Data manipulation
 lang_df <- final_df |> 
@@ -464,9 +508,9 @@ Row {data-height=100}
 ### Dashboard Updates
 
 ```{r}
- gh_endpoint <- "https://api.github.com/repos/r-devel/translations-dashboard/commits?path=message_status.csv&page=1&per_page=1"
- last_update_date <- get_last_data_update(gh_endpoint)
- glue::glue("This page was last updated on: ", {last_update_date})
+gh_endpoint <- "https://api.github.com/repos/r-devel/translations-dashboard/commits?path=message_status.csv&page=1&per_page=1"
+last_update_date <- get_last_data_update(gh_endpoint)
+glue::glue("This page was last updated on: ", {last_update_date})
 ```
 
 
