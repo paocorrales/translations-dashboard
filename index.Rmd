@@ -21,6 +21,13 @@ library(plotly)
 library(reactable)
 library(glue)
 source("R/global_translations.R")
+
+# Set colors to translation status
+colors <- c(
+  "Translated" = "#5495CFFF",
+  "Untranslated" = "#DB4743FF",
+  "Fuzzy" = "#F5AF4DFF"
+)
 ```
 
 Sidebar {.sidebar data-width=200}
@@ -133,12 +140,6 @@ create_waffle_coordinates <- function(total_squares, width = 10) {
   return(data.frame(x = x, y = y))
 }
 
-# Set colors to translation status
-colors <- c(
-  "Translated" = "#5495CFFF",
-  "Untranslated" = "#DB4743FF",
-  "Fuzzy" = "#F5AF4DFF"
-)
 
 build_waffle <- function(data) {
   
@@ -179,9 +180,9 @@ build_waffle <- function(data) {
     all_annotations[[length(all_annotations) + 1]] <- list(
       x = x_offset + 5, 
       y = y_offset + 10.75, 
-      text = paste("<b>", language, "</b>"), 
+      text = language, 
       showarrow = FALSE, 
-      font = list(size = 12, family = "Arial", color = "darkgrey")
+      font = list(size = 12)
     )
     
     # Create shapes
@@ -251,7 +252,6 @@ build_waffle <- function(data) {
         x = 0.5, 
         y = -0.005,
         yanchor = "top",
-        font = list(size = 15, family = "Arial", color = "darkgrey"),
         font = list(size = 15),
         itemsizing = "constant",
         bgcolor = "rgba(0,0,0,0)"
@@ -273,12 +273,14 @@ build_waffle <- function(data) {
       hoverinfo = "text",
       name = ~category
     )
-    
+  
   return(p)
 }
 
 build_waffle(lang_df)
 ```
+
+
 
 Row {data-height=450}
 -----------------------------------------------------------------------
