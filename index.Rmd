@@ -72,14 +72,14 @@ Row {data-height=800}
 -----------------------------------------------------------------------
 ### Translatation progress | <small> Per Package </small>
 
-```{r data}
+```{r}
 
-final_df_updated <- final_df |> group_by(package) |>    
+# Calculate count and percentage for all languages
+final_df_all <- final_df |> 
+  group_by(package) |>    
   summarise(across(c(translated_count,untranslated_count, 
                      fuzzy_count), sum)) |> 
-  mutate(language = "All", .after = package)
-
-final_df_updated <- final_df_updated |>
+  mutate(language = "All", .after = package) |>
   rowwise() |> 
   mutate(
     pc_trans_count = translated_count / sum(c_across(translated_count:fuzzy_count)),
@@ -87,7 +87,8 @@ final_df_updated <- final_df_updated |>
     pc_fuzzy_count = fuzzy_count / sum(c_across(translated_count:fuzzy_count)) 
   )
 
-final_df_neg <- bind_rows(final_df_updated, final_df) |> 
+# Join languages with all
+final_df_neg <- bind_rows(final_df_all, final_df) |> 
   mutate(pc_untrans_count = -pc_untrans_count,
          pc_fuzzy_count = -pc_fuzzy_count,
          pc_trans_count = pc_trans_count) |>
@@ -96,48 +97,55 @@ final_df_neg <- bind_rows(final_df_updated, final_df) |>
                                levels = c("pc_trans_count", "pc_untrans_count", "pc_fuzzy_count"),
                                labels = c("Translated", "Untranslated", "Fuzzy")))
 
-```
 
-```{r}
-language <- final_df_neg$language
+# Get unique languages
+languages <- unique(final_df_neg$language)
+n_lang <- length(languages)
 
-buttons <- lapply(unique(final_df_neg$language), function(filter_by_this) {
+# Create buttons for each language
+buttons <- lapply(seq_len(n_lang), function(i) {
+  # Each language has a trace for each status
+  n_status <- 3 # Translated, Untranslated, Fuzzy
+  visible <- logical(n_lang * n_status)
+  # Turn on visibility for language i with this button
+  visible[((i - 1) * n_status + 1):(i * n_status)] <- TRUE
   list(
-    method = "update",
-    args = list(
-      list(
-        color = list(final_df_neg$trans_status[final_df_neg$language == filter_by_this]),
-        y = list(final_df_neg$package[final_df_neg$language == filter_by_this]),
-        x = list(final_df_neg$percentage[final_df_neg$language == filter_by_this])
-      )
-    ),
-    label = filter_by_this
+    method = "restyle",
+    args = list("visible", visible),
+    label = languages[i]
   )
 })
 
+# Create the plot with all languages visible
+fig <- plot_ly(height = 700)
 
-fig <- plot_ly() |> 
-  
-  add_bars(data = final_df_neg,
-           x = ~percentage,
-           y = ~package,
-           color = ~trans_status,
-           colors = colors) 
+# Add traces for each language
+for(lang in languages) {
+  fig <- fig |>
+    add_bars(data = final_df_neg[final_df_neg$language == lang, ],
+             x = ~ percentage,
+             y = ~ package,
+             color = ~ trans_status,
+             colors = colors,
+             visible = if (lang == "All") TRUE else FALSE)
+}
 
-fig <- fig %>% layout(
-  xaxis = list(title = 'Percentage', tickformat = ',.0%'),
-  yaxis = list(title = ''), 
-  barmode = 'relative',
-  legend = list(y = 0.85),
-  updatemenus = list(
-    list(
-      x = 1.4,
-      y = 1,
-      buttons = buttons
+fig <- fig |>
+  layout(
+    xaxis = list(title = 'Progress', tickformat = ',.0%'),
+    yaxis = list(title = ''),
+    barmode = 'relative',
+    legend = list(x = 1,
+                  y = 0),
+    updatemenus = list(
+      list(
+        type = "dropdown",
+        buttons = buttons,
+        x = 1.25,
+        y = 1
+      )
     )
   )
-)
-
 
 fig
 ```
