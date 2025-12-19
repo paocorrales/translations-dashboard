@@ -68,8 +68,9 @@ valueBox(total_untrans_msg, icon = "fa-comment-slash", color = "white")
 valueBox(total_fuzzy_msg, icon = "fa-puzzle-piece", color = "white")
 ```
 
-Row {data-height=70}
+Row {data-height=800}
 -----------------------------------------------------------------------
+### Translatation progress | <small> Per Package </small>
 
 ```{r data}
 
@@ -96,11 +97,6 @@ final_df_neg <- bind_rows(final_df_updated, final_df) |>
                                labels = c("Translated", "Untranslated", "Fuzzy")))
 
 ```
-
-Row {data-height=800}
------------------------------------------------------------------------
-### Translatation progress | <small> Per Package </small>
-
 
 ```{r}
 language <- final_df_neg$language
@@ -325,103 +321,6 @@ build_waffle(lang_df)
 ```
 
 
-
-Row {data-height=450}
------------------------------------------------------------------------
-
-### Count of Translated Messages | <small> Across Packages </small>
-
-```{r}
-complete_trans_df %>%
-  reactable(
-    .,
-    pagination = TRUE,
-    showPageSizeOptions = TRUE,
-    highlight = TRUE,
-    defaultSorted = "translated_count",
-    defaultColDef = colDef(headerClass = "header", align = "left"),
-    columns = list(
-      package = colDef(
-        name = "Package Name",
-        width = 150,
-        defaultSortOrder = "desc",
-        filterable = TRUE,
-      ),
-      language = colDef(
-        name = "Language",
-        width = 150,
-        filterable = TRUE,
-      ),
-      untranslated_count = colDef(
-        show = FALSE
-      ),
-      translated_count = colDef(
-        name = "Translated Message Count",
-        defaultSortOrder = "desc",
-        cell = function(value) {
-          width <- paste0(value * 100 / max(complete_trans_df$translated_count), "%")
-          value <- format(value, big.mark = ",")
-          value <- format(value, width = 9, justify = "right")
-          bar <- div(
-            class = "bar-chart",
-            style = list(marginRight = "6px"),
-            div(class = "bar", style = list(width = width, backgroundColor = "#fc5185"))
-          )
-          div(class = "bar-cell", span(class = "number", value), bar)
-        }
-      )),
-    compact = TRUE,
-    bordered = TRUE,
-    class = "categories-tbl"
-  )
-```
-
-### Count of Untranslated Messages | <small> Across Packages </small>
-
-```{r}
-complete_untrans_df %>%
-  reactable(
-    .,
-    pagination = TRUE,
-    showPageSizeOptions = TRUE,
-    highlight = TRUE,
-    defaultSorted = "untranslated_count",
-    defaultColDef = colDef(headerClass = "header", align = "left"),
-    columns = list(
-      package = colDef(
-        name = "Package Name",
-        width = 150,
-        defaultSortOrder = "desc",
-        filterable = TRUE,
-      ),
-      language = colDef(
-        name = "Language",
-        width = 150,
-        filterable = TRUE,
-      ),
-      translated_count = colDef(
-        show = FALSE
-      ),
-      untranslated_count = colDef(
-        name = "Untranslated Message Count",
-        defaultSortOrder = "desc",
-        cell = function(value) {
-          width <- paste0(value * 100 / max(complete_untrans_df$untranslated_count), "%")
-          value <- format(value, big.mark = ",")
-          value <- format(value, width = 9, justify = "right")
-          bar <- div(
-            class = "bar-chart",
-            style = list(marginRight = "6px"),
-            div(class = "bar", style = list(width = width, backgroundColor = "#3fc1c9"))
-          )
-          div(class = "bar-cell", span(class = "number", value), bar)
-        }
-      )),
-    compact = TRUE,
-    bordered = TRUE,
-    class = "categories-tbl"
-  )
-```
 
 Row {data-height=450}
 -----------------------------------------------------------------------
