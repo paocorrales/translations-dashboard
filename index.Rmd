@@ -222,7 +222,9 @@ build_waffle <- function(data) {
     
     # Create coordinates
     grid <- create_waffle_coordinates(sum(counts))
-    grid$category <- rep(names(counts), times = counts)
+    # browser()
+    grid$category <- factor(rep(names(counts), times = counts), levels = c("Translated", "Untranslated", "Fuzzy"))
+ 
     
     # Add title annotation
     all_annotations[[length(all_annotations) + 1]] <- list(
@@ -275,7 +277,8 @@ build_waffle <- function(data) {
     y_offset <- (rows - 1 - row_idx) * y_gap
     
     grid <- create_waffle_coordinates(sum(pct_counts))
-    grid$category <- rep(names(pct_counts), times = pct_counts)
+    grid$category <- factor(rep(names(pct_counts), times = pct_counts), levels = c("Translated", "Untranslated", "Fuzzy"))
+    
     
     grid$real_x <- grid$x + x_offset + 0.45
     grid$real_y <- grid$y + y_offset + 0.45
@@ -287,7 +290,7 @@ build_waffle <- function(data) {
   }
   
   # Interactive plot
-  p <- plot_ly() |>
+  p <- plot_ly(height = 750) |>
     layout(
       shapes = all_shapes,
       annotations = all_annotations,
@@ -300,12 +303,9 @@ build_waffle <- function(data) {
         x = 0.5, 
         y = -0.005,
         yanchor = "top",
-        font = list(size = 15),
-        itemsizing = "constant",
-        bgcolor = "rgba(0,0,0,0)"
+        itemsizing = "constant"
       ),
-      margin = list(t = 10, b = 80, l = 0, r = 0),
-      height = 800 
+      margin = list(t = 10, b = 80, l = 0, r = 0)
     ) |>
     add_trace(
       data = hover_data,
@@ -315,8 +315,6 @@ build_waffle <- function(data) {
       mode = 'markers',
       color = ~category,
       colors = colors,
-      marker = list(opacity = 100), 
-      
       text = ~paste("<b>", language, "</b><br><b>", category, "</b>messages:<b>",Total, "</b>"),
       hoverinfo = "text",
       name = ~category
