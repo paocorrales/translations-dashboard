@@ -68,7 +68,7 @@ valueBox(total_untrans_msg, icon = "fa-comment-slash", color = "white")
 valueBox(total_fuzzy_msg, icon = "fa-puzzle-piece", color = "white")
 ```
 
-Row {data-height=800}
+Row {data-height=750}
 -----------------------------------------------------------------------
 ### Translatation progress | <small> Per Package </small>
 
@@ -425,7 +425,7 @@ R Translation Teams
 =====================================
 
 
-Row {data-height=450}
+Row {data-height=850}
 -----------------------------------------------------------------------
 
 ### R Translation Teams | <small> Contact Details </small>
@@ -436,6 +436,7 @@ translation_teams %>%
     .,
     pagination = TRUE,
     showPageSizeOptions = TRUE,
+    defaultPageSize = 25,
     highlight = TRUE,
     defaultColDef = colDef(headerClass = "header", align = "left"),
     columns = list(
